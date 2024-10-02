@@ -4,48 +4,61 @@ import streamlit as st
 from scipy import stats
 from mplsoccer import PyPizza
 
-st.title("Percentile Ranks")
-st.subheader("Filter to any team/player to see")
+st.set_page_config(layout="wide")
 
-seasons = ["2024-2025", "2023-2024", "2022-2023"]
-season = st.selectbox("Select a Season", seasons, index=0)
+# Custom CSS to reduce spacing and font sizes
+st.markdown("""
+    <style>
+    .small-font {
+        font-size:14px !important;
+    }
+    .stSelectbox > div > div {
+        padding-top: 0px;
+        padding-bottom: 0px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
-df = pd.read_csv(f"Data Fbref/{season}/Top 5.csv")
+# Reduce title and subheader font sizes
+st.markdown("<h1 style='font-size: 24px;'>Percentile Ranks</h1>", unsafe_allow_html=True)
+st.markdown("<h2 style='font-size: 18px;'>Filter to any team/player to see</h2>", unsafe_allow_html=True)
 
-League = st.selectbox("Select a league", df['League'].sort_values().unique(), index=0)
-Squad = st.selectbox("Select a team", df[df['League']==League]['Squad'].sort_values().unique(), index=1)
+# Create two columns for the selectboxes
+col1, col2 = st.columns(2)
 
-def custom_position_sort(pos):
-    order = {"GK": 0, "DF": 1, "MF": 2, "FW": 3}
-    return order.get(pos, 4)  # Positions not in the order dict will be sorted after the main positions
+with col1:
+    seasons = ["2024-2025", "2023-2024", "2022-2023"]
+    season = st.selectbox("Select a Season", seasons, index=0, key="season")
 
-# Get unique positions
-all_positions = df['Position Primary'].unique()
+    df = pd.read_csv(f"Data Fbref/{season}/Top 5.csv")
 
-# Sort positions in the desired order
-sorted_positions = sorted(all_positions, key=custom_position_sort)
+    League = st.selectbox("Select a league", df['League'].sort_values().unique(), index=0, key="league")
 
-# Create the selectbox with sorted positions
-Position = st.selectbox("Select a position", ["FW", "MF", "DF"], index=0)
+    Position = st.selectbox("Select a position", ["FW", "MF", "DF"], index=0, key="position")
 
-Minutes = st.selectbox("Select a minimum of minutes played", [100, 500, 1000, 1500], index=0)
+with col2:
+    Minutes = st.selectbox("Select a minimum of minutes played", [100, 500, 1000, 1500], index=0, key="minutes")
+    Squad = st.selectbox("Select a team", df[df['League']==League]['Squad'].sort_values().unique(), index=1, key="squad")
 
-df_filtered = df[df["90s"] >= Minutes/90]
+    df_filtered = df[df["90s"] >= Minutes/90]
 
-if df_filtered.empty:
-    st.warning(f"No players found who played at least {Minutes} minutes. Please adjust your filter.")
-    st.stop()
+    if df_filtered.empty:
+        st.warning(f"No players found who played at least {Minutes} minutes. Please adjust your filter.")
+        st.stop()
 
-filtered_players = df_filtered[
-    (df_filtered['Squad'] == Squad if Squad else True) &
-    ((df_filtered['Position Primary'] == Position) | (df_filtered['Position Secondary'] == Position) if Position else True)
-]['Player'].sort_values().unique()
+    filtered_players = df_filtered[
+        (df_filtered['Squad'] == Squad if Squad else True) &
+        ((df_filtered['Position Primary'] == Position) | (df_filtered['Position Secondary'] == Position) if Position else True)
+    ]['Player'].sort_values().unique()
 
-if len(filtered_players) == 0:
-    st.warning(f"No players found in the selected Squad/Position who played at least {Minutes} minutes. Please adjust your filters.")
-    st.stop()
+    if len(filtered_players) == 0:
+        st.warning(f"No players found in the selected Squad/Position who played at least {Minutes} minutes. Please adjust your filters.")
+        st.stop()
 
-Player = st.selectbox("Select a player", filtered_players, index=0)
+    Player = st.selectbox("Select a player", filtered_players, index=0, key="player")
+    
+# The rest of your code remains unchanged
+player_minutes = int(df_filtered[df_filtered['Player'] == Player]['90s'].values[0] * 90)
 
 df = df_filtered[(df_filtered["Position Primary"]==Position) | (df_filtered["Position Secondary"]==Position)]
 
@@ -136,9 +149,12 @@ def calculate_percentile(Player, df, params):
 
 values, absolute_values, ranks = calculate_percentile(Player, df, params)
 
+
 if values and Player:
     # Create parameter labels with absolute values and ranks
     param_labels = [f"{param}\n({abs_val:.2f})\nRank: {rank}" for param, abs_val, rank in zip(params, absolute_values, ranks)]
+
+    st.markdown(f"<h3 style='text-align: center;'>{Player} | {League} | {Position} | {player_minutes} Minutes played</h3>", unsafe_allow_html=True)
 
     baker = PyPizza(
         params=param_labels,  # Use the new parameter labels
@@ -146,27 +162,31 @@ if values and Player:
         straight_line_color="#FFFFFF",
         straight_line_lw=1,
         last_circle_lw=0,
-        other_circle_lw=0,
-        inner_circle_size=20
+        other_circle_lw=4,
+        inner_circle_size=10
     )
 
     fig, ax = baker.make_pizza(
         values,
-        figsize=(10, 10),  # Increased figure size further
+        figsize=(12, 12),  # Increased figure size further
         color_blank_space="same",
         slice_colors=["#1A78CF"] * len(params),
         value_colors=["#FFFFFF"] * len(params),
         value_bck_colors=["#1A78CF"] * len(params),
         blank_alpha=0.4,
-        param_location=120,  # Moved param labels outward more
-        kwargs_slices=dict(edgecolor="#F2F2F2", zorder=2, linewidth=1),
+        param_location=110,  # Moved param labels outward more
+        kwargs_slices=dict(edgecolor="#F2F2F2", zorder=2, linewidth=2),
         kwargs_params=dict(color="#FFFFFF", fontsize=9, va="center"),  # Reduced font size further
-        kwargs_values=dict(color="#FFFFFF", fontsize=11, zorder=3, 
+        kwargs_values=dict(color="#FFFFFF", fontsize=12, zorder=3, 
                            bbox=dict(edgecolor="#FFFFFF", facecolor="cornflowerblue", boxstyle="round, pad=0.2", lw=1))
     )
 
     # We're not adding any additional text here
 
-    st.pyplot(fig)
-    st.text(f"Compared to other {Position} | {League} | {season} season | Min. {Minutes} minutes played")
-    st.text(f"Datasource: fbref.com")
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.pyplot(fig)
+
+    # Center the text using markdown with HTML and CSS
+    st.markdown(f"<p style='text-align: center;'>Compared to other {Position} | {League} | {season} season | Min. {Minutes} minutes played</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center;'>Datasource: fbref.com</p>", unsafe_allow_html=True)
