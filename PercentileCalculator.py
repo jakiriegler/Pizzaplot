@@ -3,6 +3,9 @@ import math
 import streamlit as st
 from scipy import stats
 from mplsoccer import PyPizza
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import numpy as np
 
 st.set_page_config(layout="wide")
 
@@ -166,19 +169,28 @@ if values and Player:
         inner_circle_size=10
     )
 
+    # Create a color gradient from red to green
+    import matplotlib.colors as mcolors
+    import numpy as np
+
+    def value_to_color(value):
+        return mcolors.to_hex(plt.cm.RdYlGn(value / 100))
+
+    slice_colors = [value_to_color(value) for value in values]
+
     fig, ax = baker.make_pizza(
         values,
         figsize=(12, 12),  # Increased figure size further
         color_blank_space="same",
-        slice_colors=["#1A78CF"] * len(params),
-        value_colors=["#FFFFFF"] * len(params),
-        value_bck_colors=["#1A78CF"] * len(params),
+        slice_colors=slice_colors,  # Use the gradient colors
+        value_colors=["#000000"] * len(params),  # Changed to black for better visibility
+        value_bck_colors=["#FFFFFF"] * len(params),  # Changed to white for better visibility
         blank_alpha=0.4,
         param_location=110,  # Moved param labels outward more
-        kwargs_slices=dict(edgecolor="#F2F2F2", zorder=2, linewidth=2),
-        kwargs_params=dict(color="#FFFFFF", fontsize=9, va="center"),  # Reduced font size further
-        kwargs_values=dict(color="#FFFFFF", fontsize=12, zorder=3, 
-                           bbox=dict(edgecolor="#FFFFFF", facecolor="cornflowerblue", boxstyle="round, pad=0.2", lw=1))
+        kwargs_slices=dict(edgecolor="#F2F2F2", zorder=2, linewidth=3),
+        kwargs_params=dict(color="#FFFFFF", fontsize=10.5, va="center"),  # Reduced font size further
+        kwargs_values=dict(color="#000000", fontsize=16, zorder=3, 
+                           bbox=dict(edgecolor="#000000", facecolor="#FFFFFF", boxstyle="round, pad=0.2", lw=1))
     )
 
     # We're not adding any additional text here
