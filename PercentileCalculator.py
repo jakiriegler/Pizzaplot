@@ -160,7 +160,7 @@ if values and Player:
         blank_alpha=0.4,
         param_location=120,  # Moved param labels outward more
         kwargs_slices=dict(edgecolor="#F2F2F2", zorder=2, linewidth=1),
-        kwargs_params=dict(color="#FFFFFF", fontsize=7, va="center"),  # Reduced font size further
+        kwargs_params=dict(color="#FFFFFF", fontsize=9, va="center"),  # Reduced font size further
         kwargs_values=dict(color="#FFFFFF", fontsize=11, zorder=3, 
                            bbox=dict(edgecolor="#FFFFFF", facecolor="cornflowerblue", boxstyle="round, pad=0.2", lw=1))
     )
