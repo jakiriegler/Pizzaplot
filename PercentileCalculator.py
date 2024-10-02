@@ -110,30 +110,35 @@ def calculate_percentile(Player, df, params):
     player_data = df[df["Player"] == Player]
     if player_data.empty:
         st.warning("Please select a player to generate the visualization.")
-        return None, None
+        return None, None, None
     
     percentiles = []
     absolute_values = []
+    ranks = []
     for param in params:
         value = player_data.iloc[0][param]
         percentile = math.floor(stats.percentileofscore(df[param], value))
         
         if param in negate_columns:
             percentile = 100 - percentile
+            rank = df[param].rank(ascending=True).loc[player_data.index[0]]
+        else:
+            rank = df[param].rank(ascending=False).loc[player_data.index[0]]
         
         percentiles.append(percentile)
         absolute_values.append(value)
+        ranks.append(int(rank))
     
-    return percentiles, absolute_values
+    return percentiles, absolute_values, ranks
 
 
 
 
-values, absolute_values = calculate_percentile(Player, df, params)
+values, absolute_values, ranks = calculate_percentile(Player, df, params)
 
 if values and Player:
-    # Create parameter labels with absolute values
-    param_labels = [f"{param}\n({abs_val:.2f})" for param, abs_val in zip(params, absolute_values)]
+    # Create parameter labels with absolute values and ranks
+    param_labels = [f"{param}\n({abs_val:.2f})\nRank: {rank}" for param, abs_val, rank in zip(params, absolute_values, ranks)]
 
     baker = PyPizza(
         params=param_labels,  # Use the new parameter labels
@@ -147,15 +152,15 @@ if values and Player:
 
     fig, ax = baker.make_pizza(
         values,
-        figsize=(8.5, 8.5),  # Increased figure size
+        figsize=(10, 10),  # Increased figure size further
         color_blank_space="same",
         slice_colors=["#1A78CF"] * len(params),
         value_colors=["#FFFFFF"] * len(params),
         value_bck_colors=["#1A78CF"] * len(params),
         blank_alpha=0.4,
-        param_location=115,  # Moved param labels outward
+        param_location=120,  # Moved param labels outward more
         kwargs_slices=dict(edgecolor="#F2F2F2", zorder=2, linewidth=1),
-        kwargs_params=dict(color="#FFFFFF", fontsize=8, va="center"),  # Reduced font size
+        kwargs_params=dict(color="#FFFFFF", fontsize=7, va="center"),  # Reduced font size further
         kwargs_values=dict(color="#FFFFFF", fontsize=11, zorder=3, 
                            bbox=dict(edgecolor="#FFFFFF", facecolor="cornflowerblue", boxstyle="round, pad=0.2", lw=1))
     )
